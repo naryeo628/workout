@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💪 운동 부위 가이드</title>
+    <meta name="description" content="인체 부위를 누르면 해당 부위 운동·기구·방법을 보여주는 운동 가이드. 어떤 기구로 어디를 타게팅하는지 한눈에.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💪</text></svg>">
+    <style>
+        :root {
+            --bg:#0d1117; --bg-elev:#161b22; --bg-hover:#1c2230; --border:#30363d;
+            --text:#e6edf3; --text-dim:#8b949e; --accent:#f85149; --accent2:#f0a020;
+            --accent-soft:rgba(248,81,73,.14); --muscle:#30363d; --muscle-on:#f85149;
+            --radius:14px; --shadow:0 4px 16px rgba(0,0,0,.35);
+        }
+        @media (prefers-color-scheme: light){
+            :root{ --bg:#f6f8fa; --bg-elev:#fff; --bg-hover:#eef1f4; --border:#d0d7de;
+                --text:#1f2328; --text-dim:#636c76; --accent:#cf222e; --accent2:#bf8700;
+                --accent-soft:rgba(207,34,46,.1); --muscle:#d0d7de; --muscle-on:#cf222e; --shadow:0 4px 16px rgba(0,0,0,.1); }
+        }
+        *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+        body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+            background:var(--bg); color:var(--text); line-height:1.55; min-height:100vh; -webkit-font-smoothing:antialiased; }
+        .wrap{ max-width:980px; margin:0 auto; padding:26px 16px 70px; }
+        .home-link{ color:var(--text-dim); text-decoration:none; font-size:.85rem; }
+        .home-link:hover{ color:var(--accent); }
+        h1{ font-size:clamp(1.5rem,5vw,2.1rem); margin-top:8px; letter-spacing:-.02em; }
+        .sub{ color:var(--text-dim); margin-top:6px; font-size:.92rem; }
+
+        .top{ display:grid; grid-template-columns:300px 1fr; gap:22px; margin-top:22px; align-items:start; }
+        @media (max-width:680px){ .top{ grid-template-columns:1fr; } }
+
+        .bodybox{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
+        .view-toggle{ display:flex; gap:6px; justify-content:center; margin-bottom:8px; }
+        .view-toggle button{ padding:6px 16px; font-size:.85rem; font-weight:600; border-radius:999px; cursor:pointer;
+            border:1px solid var(--border); background:var(--bg); color:var(--text-dim); }
+        .view-toggle button.active{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+        svg.body{ width:100%; height:auto; display:block; }
+        .region{ cursor:pointer; }
+        .region .m{ fill:var(--muscle); stroke:var(--bg-elev); stroke-width:1.2; transition:fill .15s; }
+        .region:hover .m{ fill:var(--accent2); }
+        .region.on .m{ fill:var(--muscle-on); }
+        .skel{ fill:var(--bg-hover); }
+        .body-cap{ text-align:center; color:var(--text-dim); font-size:.8rem; margin-top:4px; }
+
+        .controls .active-part{ font-size:1.1rem; font-weight:800; }
+        .active-part .clear{ font-size:.78rem; font-weight:600; color:var(--accent); cursor:pointer; margin-left:8px; }
+        .chips{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+        .chip{ padding:6px 12px; font-size:.82rem; font-weight:600; border-radius:999px; cursor:pointer;
+            border:1px solid var(--border); background:var(--bg-elev); color:var(--text-dim); }
+        .chip.on{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+        .chip:hover{ color:var(--text); }
+        .search{ position:relative; margin-bottom:6px; }
+        .search input{ width:100%; padding:10px 12px; font-size:.95rem; color:var(--text);
+            background:var(--bg-elev); border:1px solid var(--border); border-radius:10px; outline:none; }
+        .search input:focus{ border-color:var(--accent); }
+
+        .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-top:18px; }
+        .card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); padding:16px; cursor:pointer;
+            transition:transform .15s,border-color .15s; display:flex; flex-direction:column; gap:6px; }
+        .card:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:var(--shadow); }
+        .card h3{ font-size:1.05rem; }
+        .card .tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+        .tag{ font-size:.7rem; padding:3px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:600; }
+        .tag.eq{ background:var(--bg-hover); color:var(--text-dim); }
+        .tag.lv1{ background:rgba(63,185,80,.15); color:#3fb950; } .tag.lv2{ background:rgba(240,160,32,.15); color:var(--accent2); } .tag.lv3{ background:var(--accent-soft); color:var(--accent); }
+        .count{ color:var(--text-dim); font-size:.85rem; margin-top:14px; }
+
+        .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); display:none;
+            align-items:flex-start; justify-content:center; z-index:50; padding:24px 16px; overflow-y:auto; }
+        .overlay.open{ display:flex; }
+        .modal{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); max-width:540px; width:100%;
+            padding:24px; box-shadow:var(--shadow); margin:auto; }
+        .modal-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+        .modal h2{ font-size:1.4rem; }
+        .close{ background:none; border:none; color:var(--text-dim); font-size:1.6rem; cursor:pointer; line-height:1; }
+        .close:hover{ color:var(--text); }
+        .modal h4{ margin:16px 0 6px; font-size:.9rem; color:var(--accent); }
+        .modal ol{ padding-left:20px; } .modal li{ margin:5px 0; }
+        .mt{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+        .tip{ background:var(--bg); border-left:3px solid var(--accent2); padding:10px 14px; border-radius:8px; margin-top:14px; font-size:.9rem; color:var(--text-dim); }
+        .prim{ color:var(--accent); font-weight:700; }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <a class="home-link" href="https://naryeo628.github.io/">← 허브</a>
+        <h1>💪 운동 부위 가이드</h1>
+        <p class="sub">인체 그림에서 부위를 누르면 그 부위 운동·기구·방법이 나옵니다. 기구 필터로 좁히기도 가능.</p>
+
+        <div class="top">
+            <div class="bodybox">
+                <div class="view-toggle">
+                    <button id="v-front" class="active" onclick="setView('front')">앞</button>
+                    <button id="v-back" onclick="setView('back')">뒤</button>
+                </div>
+                <div id="body-front"></div>
+                <div id="body-back" style="display:none"></div>
+                <div class="body-cap">부위를 탭하세요</div>
+            </div>
+
+            <div class="controls">
+                <div class="active-part" id="active-part">전체 운동</div>
+                <div class="search"><input id="search" type="text" placeholder="운동 이름 검색…" oninput="applyFilter()"></div>
+                <div style="font-size:.8rem;color:var(--text-dim);margin:6px 0 2px">기구</div>
+                <div class="chips" id="equip-chips"></div>
+                <div class="count" id="count"></div>
+                <div class="grid" id="grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+    <script>
+    // ── 부위 메타 ──
+    const PARTS = {
+        chest:{ ko:"가슴", desc:"대흉근" }, back:{ ko:"등", desc:"광배근·능형근" },
+        traps:{ ko:"승모", desc:"승모근" }, shoulder:{ ko:"어깨", desc:"삼각근" },
+        biceps:{ ko:"이두", desc:"상완이두근" }, triceps:{ ko:"삼두", desc:"상완삼두근" },
+        forearm:{ ko:"전완", desc:"전완근" }, abs:{ ko:"복근", desc:"복직근·복사근" },
+        quads:{ ko:"대퇴사두", desc:"대퇴사두근" }, hamstring:{ ko:"햄스트링", desc:"햄스트링" },
+        glutes:{ ko:"둔근", desc:"대둔근" }, calves:{ ko:"종아리", desc:"비복근" },
+    };
+    const EQUIPS = ["바벨","덤벨","머신","케이블","맨몸","케틀벨","밴드","스미스"];
+
+    // ── 운동 DB ──
+    const EX = [
+        // 가슴
+        { n:"벤치프레스", p:"chest", s:["triceps","shoulder"], e:["바벨"], lv:2,
+          steps:["벤치에 누워 어깨너비보다 약간 넓게 바를 잡는다.","가슴 중앙으로 바를 내렸다가 밀어 올린다.","팔꿈치는 45도, 견갑골은 모아 고정."], tip:"허리 과도한 아치 금지, 발은 바닥에 단단히." },
+        { n:"인클라인 벤치프레스", p:"chest", s:["shoulder","triceps"], e:["바벨","덤벨"], lv:2,
+          steps:["벤치를 30~45도로 세운다.","윗가슴을 향해 바/덤벨을 밀어 올린다."], tip:"각도 높을수록 어깨 개입 ↑. 30도 권장." },
+        { n:"덤벨 프레스", p:"chest", s:["triceps","shoulder"], e:["덤벨"], lv:1,
+          steps:["덤벨을 가슴 옆에서 시작.","위로 밀며 모아준다."], tip:"가동범위가 바벨보다 넓어 가슴 자극 ↑." },
+        { n:"푸시업", p:"chest", s:["triceps","abs"], e:["맨몸"], lv:1,
+          steps:["손은 어깨너비보다 약간 넓게.","몸을 일직선 유지하며 내렸다 민다."], tip:"코어 단단히, 엉덩이 처지지 않게." },
+        { n:"체스트 플라이", p:"chest", s:[], e:["덤벨","케이블","머신"], lv:1,
+          steps:["팔을 살짝 굽힌 채 벌렸다 모은다.","가슴이 늘어나는 느낌에 집중."], tip:"무게보다 자극·가동범위 우선." },
+        { n:"케이블 크로스오버", p:"chest", s:[], e:["케이블"], lv:2,
+          steps:["높은 도르래에서 손을 아래·앞으로 모은다.","가슴 중앙에서 짜준다."], tip:"상체 약간 앞으로 기울이면 자극 ↑." },
+        { n:"딥스", p:"chest", s:["triceps","shoulder"], e:["맨몸"], lv:2,
+          steps:["평행봉에서 몸을 내렸다 올린다.","상체를 앞으로 숙이면 가슴, 세우면 삼두."], tip:"어깨 통증 시 가동범위 줄이기." },
+        // 등
+        { n:"데드리프트", p:"back", s:["glutes","hamstring","traps"], e:["바벨"], lv:3,
+          steps:["발은 골반 너비, 바를 정강이 가까이.","허리 펴고 엉덩이로 밀며 일어선다."], tip:"등 둥글면 부상 위험. 중량보다 자세 먼저." },
+        { n:"풀업(턱걸이)", p:"back", s:["biceps","forearm"], e:["맨몸"], lv:3,
+          steps:["어깨너비보다 넓게 바를 잡는다.","가슴을 바로 당겨 올린다."], tip:"광배로 당기는 느낌, 반동 최소화." },
+        { n:"랫풀다운", p:"back", s:["biceps"], e:["케이블","머신"], lv:1,
+          steps:["바를 넓게 잡고 가슴 위쪽으로 당긴다.","견갑골을 아래로 모은다."], tip:"턱걸이가 어렵다면 입문용으로 최적." },
+        { n:"바벨 로우", p:"back", s:["biceps","traps"], e:["바벨"], lv:2,
+          steps:["상체를 45도 숙이고 바를 배꼽 쪽으로 당긴다.","팔꿈치를 뒤로 보낸다."], tip:"허리 중립 유지, 반동 금지." },
+        { n:"덤벨 로우", p:"back", s:["biceps"], e:["덤벨"], lv:1,
+          steps:["벤치에 한 손·한 무릎을 대고 지지.","덤벨을 골반 쪽으로 당긴다."], tip:"등으로 당기고 팔은 거들기만." },
+        { n:"시티드 케이블 로우", p:"back", s:["biceps"], e:["케이블"], lv:1,
+          steps:["앉아서 손잡이를 배 쪽으로 당긴다.","가슴은 펴고 견갑골을 모은다."], tip:"상체 흔들지 말고 등으로만." },
+        // 승모
+        { n:"슈러그", p:"traps", s:[], e:["덤벨","바벨"], lv:1,
+          steps:["덤벨/바벨을 들고 어깨를 위로 으쓱 올린다.","꼭대기에서 잠깐 멈춘다."], tip:"돌리지 말고 수직으로만 올리기." },
+        // 어깨
+        { n:"오버헤드 프레스", p:"shoulder", s:["triceps"], e:["바벨"], lv:2,
+          steps:["바를 쇄골 앞에서 머리 위로 밀어 올린다.","코어와 둔근으로 몸통 고정."], tip:"허리 젖히지 말 것." },
+        { n:"덤벨 숄더프레스", p:"shoulder", s:["triceps"], e:["덤벨"], lv:1,
+          steps:["덤벨을 귀 옆에서 위로 밀어 올린다."], tip:"앉아서 하면 허리 부담 감소." },
+        { n:"사이드 레터럴 레이즈", p:"shoulder", s:[], e:["덤벨","케이블"], lv:1,
+          steps:["덤벨을 양옆으로 어깨 높이까지 올린다.","팔꿈치 살짝 굽힌 채."], tip:"측면 삼각근 타겟. 반동 없이 가볍게." },
+        { n:"페이스 풀", p:"shoulder", s:["traps"], e:["케이블"], lv:1,
+          steps:["로프를 얼굴 쪽으로 당기며 팔꿈치를 벌린다."], tip:"후면 삼각근·자세 교정에 좋음." },
+        { n:"리어 델트 플라이", p:"shoulder", s:[], e:["덤벨","머신"], lv:1,
+          steps:["상체 숙이고 덤벨을 양옆 뒤로 벌린다."], tip:"후면 삼각근. 굽은 어깨 교정." },
+        // 이두
+        { n:"바벨 컬", p:"biceps", s:["forearm"], e:["바벨"], lv:1,
+          steps:["바를 언더그립으로 잡고 팔꿈치 고정.","위로 말아 올린다."], tip:"팔꿈치를 몸통에 붙이고 고정." },
+        { n:"덤벨 컬", p:"biceps", s:["forearm"], e:["덤벨"], lv:1,
+          steps:["덤벨을 들어 올리며 손목을 살짝 돌린다(수피네이션)."], tip:"양팔 번갈아 또는 동시." },
+        { n:"해머 컬", p:"biceps", s:["forearm"], e:["덤벨"], lv:1,
+          steps:["손등이 바깥을 보게 잡고 들어 올린다."], tip:"전완·상완근 동시 자극." },
+        { n:"케이블 컬", p:"biceps", s:["forearm"], e:["케이블"], lv:1,
+          steps:["낮은 도르래에서 손잡이를 말아 올린다."], tip:"내내 일정한 장력 유지가 장점." },
+        // 삼두
+        { n:"트라이셉스 푸시다운", p:"triceps", s:[], e:["케이블"], lv:1,
+          steps:["로프/바를 아래로 밀어 편다.","팔꿈치 고정."], tip:"끝에서 살짝 짜주기." },
+        { n:"스컬크러셔", p:"triceps", s:[], e:["바벨","덤벨"], lv:2,
+          steps:["누워서 바를 이마 쪽으로 내렸다 편다.","팔꿈치 위치 고정."], tip:"팔꿈치 벌어지지 않게." },
+        { n:"오버헤드 익스텐션", p:"triceps", s:[], e:["덤벨","케이블"], lv:1,
+          steps:["덤벨을 머리 뒤로 내렸다 위로 편다."], tip:"삼두 장두 스트레칭 자극." },
+        // 복근
+        { n:"플랭크", p:"abs", s:[], e:["맨몸"], lv:1,
+          steps:["팔꿈치와 발끝으로 몸을 일직선 유지."], tip:"엉덩이 높낮이 일정, 호흡 유지." },
+        { n:"크런치", p:"abs", s:[], e:["맨몸"], lv:1,
+          steps:["누워서 상체를 말아 올린다.","복근 수축에 집중."], tip:"목으로 당기지 말 것." },
+        { n:"레그 레이즈", p:"abs", s:[], e:["맨몸"], lv:2,
+          steps:["누워서 다리를 모아 들어 올렸다 내린다."], tip:"하복부 타겟. 허리 바닥에 밀착." },
+        { n:"행잉 레그레이즈", p:"abs", s:["forearm"], e:["맨몸"], lv:3,
+          steps:["바에 매달려 다리를 들어 올린다."], tip:"반동 없이 복근으로." },
+        { n:"러시안 트위스트", p:"abs", s:[], e:["맨몸"], lv:1,
+          steps:["앉아 상체를 뒤로 기울인 채 좌우로 비튼다."], tip:"복사근 타겟. 무게 추가 가능." },
+        { n:"케이블 크런치", p:"abs", s:[], e:["케이블"], lv:1,
+          steps:["무릎 꿇고 로프를 잡아 상체를 말아 내린다."], tip:"고중량 복근 운동에 적합." },
+        // 하체
+        { n:"스쿼트", p:"quads", s:["glutes","hamstring"], e:["바벨"], lv:3,
+          steps:["바를 등 위에 얹고 엉덩이를 뒤로 빼며 앉는다.","허벅지가 수평이 될 때까지."], tip:"무릎이 발끝 방향, 허리 중립." },
+        { n:"레그 프레스", p:"quads", s:["glutes"], e:["머신"], lv:1,
+          steps:["발판을 밀어 다리를 펴고 천천히 굽힌다."], tip:"무릎 완전 잠금 금지." },
+        { n:"런지", p:"quads", s:["glutes","hamstring"], e:["덤벨","맨몸"], lv:2,
+          steps:["한 발 앞으로 내딛고 뒷무릎을 내린다.","번갈아 진행."], tip:"상체 곧게, 앞무릎 발끝 안 넘게." },
+        { n:"불가리안 스플릿 스쿼트", p:"quads", s:["glutes"], e:["덤벨"], lv:2,
+          steps:["뒷발을 벤치에 올리고 앞다리로 앉았다 선다."], tip:"균형·둔근 자극 강함." },
+        { n:"레그 익스텐션", p:"quads", s:[], e:["머신"], lv:1,
+          steps:["앉아서 다리를 펴 올린다."], tip:"대퇴사두 고립. 무릎 부담 시 가볍게." },
+        { n:"레그 컬", p:"hamstring", s:[], e:["머신"], lv:1,
+          steps:["엎드리거나 앉아 발뒤꿈치를 당겨 굽힌다."], tip:"햄스트링 고립." },
+        { n:"루마니안 데드리프트", p:"hamstring", s:["glutes","back"], e:["바벨","덤벨"], lv:2,
+          steps:["무릎 살짝 굽힌 채 엉덩이를 빼며 바를 내린다.","햄스트링 늘어나면 일어선다."], tip:"등 펴고, 바는 다리에 가깝게." },
+        { n:"힙 쓰러스트", p:"glutes", s:["hamstring"], e:["바벨"], lv:2,
+          steps:["등 상부를 벤치에 대고 바를 골반에 얹는다.","엉덩이를 위로 밀어 올린다."], tip:"꼭대기에서 둔근 꽉 짜기." },
+        { n:"카프 레이즈", p:"calves", s:[], e:["머신","덤벨"], lv:1,
+          steps:["발끝으로 서서 뒤꿈치를 최대한 올렸다 내린다."], tip:"꼭대기 1초 정지, 가동범위 크게." },
+        // 전신
+        { n:"케틀벨 스윙", p:"glutes", s:["hamstring","back"], e:["케틀벨"], lv:2,
+          steps:["케틀벨을 다리 사이로 보냈다 엉덩이 힘으로 앞으로 스윙."], tip:"팔이 아니라 힙 힌지로. 전신 유산소+근력." },
+    ];
+
+    // ── 상태 ──
+    let selPart = null, selEquip = null;
+
+    // ── 인체도 SVG ──
+    function region(part, shapes){
+        return `<g class="region" data-part="${part}" onclick="selectPart('${part}')"><title>${PARTS[part].ko}</title>${shapes}</g>`;
+    }
+    function bodyFront(){
+        return `<svg class="body" viewBox="0 0 220 430" xmlns="http://www.w3.org/2000/svg">
+            <circle class="skel" cx="110" cy="32" r="20"/>
+            <rect class="skel" x="103" y="50" width="14" height="14"/>
+            ${region("shoulder", `<ellipse class="m" cx="74" cy="80" rx="17" ry="14"/><ellipse class="m" cx="146" cy="80" rx="17" ry="14"/>`)}
+            ${region("chest", `<ellipse class="m" cx="93" cy="104" rx="20" ry="15"/><ellipse class="m" cx="127" cy="104" rx="20" ry="15"/>`)}
+            ${region("biceps", `<ellipse class="m" cx="58" cy="118" rx="11" ry="24"/><ellipse class="m" cx="162" cy="118" rx="11" ry="24"/>`)}
+            ${region("abs", `<rect class="m" x="92" y="124" width="36" height="60" rx="9"/>`)}
+            ${region("forearm", `<ellipse class="m" cx="48" cy="168" rx="9" ry="26"/><ellipse class="m" cx="172" cy="168" rx="9" ry="26"/>`)}
+            ${region("quads", `<ellipse class="m" cx="93" cy="258" rx="17" ry="46"/><ellipse class="m" cx="127" cy="258" rx="17" ry="46"/>`)}
+            ${region("calves", `<ellipse class="m" cx="93" cy="350" rx="13" ry="34"/><ellipse class="m" cx="127" cy="350" rx="13" ry="34"/>`)}
+        </svg>`;
+    }
+    function bodyBack(){
+        return `<svg class="body" viewBox="0 0 220 430" xmlns="http://www.w3.org/2000/svg">
+            <circle class="skel" cx="110" cy="32" r="20"/>
+            ${region("traps", `<path class="m" d="M88 60 L132 60 L150 86 L110 96 L70 86 Z"/>`)}
+            ${region("shoulder", `<ellipse class="m" cx="74" cy="82" rx="15" ry="12"/><ellipse class="m" cx="146" cy="82" rx="15" ry="12"/>`)}
+            ${region("back", `<path class="m" d="M82 98 L138 98 L132 156 L110 168 L88 156 Z"/>`)}
+            ${region("triceps", `<ellipse class="m" cx="57" cy="120" rx="11" ry="24"/><ellipse class="m" cx="163" cy="120" rx="11" ry="24"/>`)}
+            ${region("forearm", `<ellipse class="m" cx="47" cy="170" rx="9" ry="26"/><ellipse class="m" cx="173" cy="170" rx="9" ry="26"/>`)}
+            ${region("glutes", `<ellipse class="m" cx="93" cy="196" rx="18" ry="20"/><ellipse class="m" cx="127" cy="196" rx="18" ry="20"/>`)}
+            ${region("hamstring", `<ellipse class="m" cx="93" cy="262" rx="16" ry="42"/><ellipse class="m" cx="127" cy="262" rx="16" ry="42"/>`)}
+            ${region("calves", `<ellipse class="m" cx="93" cy="352" rx="13" ry="34"/><ellipse class="m" cx="127" cy="352" rx="13" ry="34"/>`)}
+        </svg>`;
+    }
+
+    function setView(v){
+        document.getElementById("v-front").classList.toggle("active", v==="front");
+        document.getElementById("v-back").classList.toggle("active", v==="back");
+        document.getElementById("body-front").style.display = v==="front" ? "block" : "none";
+        document.getElementById("body-back").style.display = v==="back" ? "block" : "none";
+        highlightBody();
+    }
+    function highlightBody(){
+        document.querySelectorAll(".region").forEach(g => g.classList.toggle("on", g.dataset.part === selPart));
+    }
+    function selectPart(p){
+        selPart = (selPart === p) ? null : p;
+        highlightBody();
+        applyFilter();
+    }
+    function clearPart(){ selPart = null; highlightBody(); applyFilter(); }
+
+    // ── 필터/렌더 ──
+    function renderEquipChips(){
+        document.getElementById("equip-chips").innerHTML = EQUIPS.map(e =>
+            `<span class="chip" data-e="${e}" onclick="toggleEquip('${e}')">${e}</span>`).join("");
+    }
+    function toggleEquip(e){
+        selEquip = (selEquip === e) ? null : e;
+        document.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.e === selEquip));
+        applyFilter();
+    }
+    function applyFilter(){
+        const q = document.getElementById("search").value.trim().toLowerCase();
+        const ap = document.getElementById("active-part");
+        ap.innerHTML = selPart
+            ? `${PARTS[selPart].ko} <span style="font-size:.8rem;color:var(--text-dim);font-weight:600">${PARTS[selPart].desc}</span><span class="clear" onclick="clearPart()">✕ 전체</span>`
+            : "전체 운동";
+        const list = EX.filter(x => {
+            if (selPart && x.p !== selPart && !x.s.includes(selPart)) return false;
+            if (selEquip && !x.e.includes(selEquip)) return false;
+            if (q && !x.n.toLowerCase().includes(q)) return false;
+            return true;
+        });
+        document.getElementById("count").textContent = `${list.length}개 운동`;
+        document.getElementById("grid").innerHTML = list.map(cardHTML).join("") ||
+            `<div style="color:var(--text-dim)">조건에 맞는 운동이 없어요.</div>`;
+    }
+    function cardHTML(x){
+        const idx = EX.indexOf(x);
+        const eqTags = x.e.map(e => `<span class="tag eq">${e}</span>`).join("");
+        return `<div class="card" onclick="openEx(${idx})">
+            <h3>${x.n}</h3>
+            <div class="tags"><span class="tag">${PARTS[x.p].ko}</span>${eqTags}<span class="tag lv${x.lv}">${["","입문","중급","고급"][x.lv]}</span></div>
+        </div>`;
+    }
+    function openEx(i){
+        const x = EX[i];
+        const prim = `<span class="tag prim">${PARTS[x.p].ko} (${PARTS[x.p].desc})</span>`;
+        const sec = x.s.map(k => `<span class="tag">${PARTS[k].ko}</span>`).join("");
+        const eq = x.e.map(e => `<span class="tag eq">${e}</span>`).join("");
+        document.getElementById("modal").innerHTML = `
+            <div class="modal-head"><h2>${x.n}</h2><button class="close" onclick="closeModal()">×</button></div>
+            <h4>타겟 부위</h4><div class="mt">${prim}${sec}</div>
+            <h4>기구</h4><div class="mt">${eq}<span class="tag lv${x.lv}">${["","입문","중급","고급"][x.lv]}</span></div>
+            <h4>방법</h4><ol>${x.steps.map(s=>`<li>${s}</li>`).join("")}</ol>
+            <div class="tip">💡 ${x.tip}</div>`;
+        document.getElementById("overlay").classList.add("open");
+    }
+    function closeModal(){ document.getElementById("overlay").classList.remove("open"); }
+    document.getElementById("overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeModal(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+    // ── 시작 ──
+    document.getElementById("body-front").innerHTML = bodyFront();
+    document.getElementById("body-back").innerHTML = bodyBack();
+    renderEquipChips();
+    applyFilter();
+    </script>
+</body>
+
+</html>
