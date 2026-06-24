@@ -41,6 +41,12 @@
         .region .m{ fill:var(--muscle); stroke:var(--bg-elev); stroke-width:1.2; transition:fill .15s; }
         .region:hover .m{ fill:var(--accent2); }
         .region.on .m{ fill:var(--muscle-on); }
+        .region.hl-sec .m{ fill:var(--accent2); }
+        .region.hl-prim .m{ fill:var(--muscle-on); }
+        .legend{ display:flex; gap:12px; justify-content:center; font-size:.72rem; color:var(--text-dim); margin-top:6px; }
+        .legend span{ display:inline-flex; align-items:center; gap:4px; }
+        .legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+        .legend .p{ background:var(--muscle-on); } .legend .s{ background:var(--accent2); }
         .skel{ fill:var(--bg-hover); }
         .body-cap{ text-align:center; color:var(--text-dim); font-size:.8rem; margin-top:4px; }
 
@@ -98,7 +104,8 @@
                 </div>
                 <div id="body-front"></div>
                 <div id="body-back" style="display:none"></div>
-                <div class="body-cap">부위를 탭하세요</div>
+                <div class="body-cap" id="body-cap">부위를 탭하거나, 운동에 마우스를 올려보세요</div>
+                <div class="legend"><span><i class="p"></i>주동근</span><span><i class="s"></i>협응근</span></div>
             </div>
 
             <div class="controls">
@@ -125,6 +132,8 @@
         glutes:{ ko:"둔근", desc:"대둔근" }, calves:{ ko:"종아리", desc:"비복근" },
     };
     const EQUIPS = ["바벨","덤벨","머신","케이블","맨몸","케틀벨","밴드","스미스"];
+    const FRONT_PARTS = ["shoulder","chest","biceps","abs","forearm","quads","calves"];
+    const BACK_PARTS  = ["traps","shoulder","back","triceps","forearm","glutes","hamstring","calves"];
 
     // ── 운동 DB ──
     const EX = [
@@ -224,7 +233,7 @@
     ];
 
     // ── 상태 ──
-    let selPart = null, selEquip = null;
+    let selPart = null, selEquip = null, currentView = "front";
 
     // ── 인체도 SVG ──
     function region(part, shapes){
@@ -258,6 +267,7 @@
     }
 
     function setView(v){
+        currentView = v;
         document.getElementById("v-front").classList.toggle("active", v==="front");
         document.getElementById("v-back").classList.toggle("active", v==="back");
         document.getElementById("body-front").style.display = v==="front" ? "block" : "none";
@@ -273,6 +283,27 @@
         applyFilter();
     }
     function clearPart(){ selPart = null; highlightBody(); applyFilter(); }
+
+    // ── 운동 hover → 근육 미리보기 ──
+    function previewEx(i){
+        const x = EX[i], sec = x.s;
+        document.querySelectorAll(".region").forEach(g => {
+            g.classList.remove("hl-prim","hl-sec");
+            if (g.dataset.part === x.p) g.classList.add("hl-prim");
+            else if (sec.includes(g.dataset.part)) g.classList.add("hl-sec");
+        });
+        const here = currentView === "front" ? FRONT_PARTS : BACK_PARTS;
+        const targets = [x.p, ...sec];
+        const otherSide = targets.some(p => !here.includes(p));
+        const secTxt = sec.length ? " · " + sec.map(k => `<span style="color:var(--accent2)">${PARTS[k].ko}</span>`).join(" · ") : "";
+        document.getElementById("body-cap").innerHTML =
+            `<b>${x.n}</b> → <span style="color:var(--accent)">${PARTS[x.p].ko}</span>${secTxt}` +
+            (otherSide ? ` <span style="opacity:.7">· 🔄 ${currentView==="front"?"뒤":"앞"}쪽도</span>` : "");
+    }
+    function clearPreview(){
+        document.querySelectorAll(".region").forEach(g => g.classList.remove("hl-prim","hl-sec"));
+        document.getElementById("body-cap").textContent = "부위를 탭하거나, 운동에 마우스를 올려보세요";
+    }
 
     // ── 필터/렌더 ──
     function renderEquipChips(){
@@ -303,7 +334,7 @@
     function cardHTML(x){
         const idx = EX.indexOf(x);
         const eqTags = x.e.map(e => `<span class="tag eq">${e}</span>`).join("");
-        return `<div class="card" onclick="openEx(${idx})">
+        return `<div class="card" onclick="openEx(${idx})" onmouseenter="previewEx(${idx})" onmouseleave="clearPreview()">
             <h3>${x.n}</h3>
             <div class="tags"><span class="tag">${PARTS[x.p].ko}</span>${eqTags}<span class="tag lv${x.lv}">${["","입문","중급","고급"][x.lv]}</span></div>
         </div>`;
