@@ -28,15 +28,20 @@
         h1{ font-size:clamp(1.5rem,5vw,2.1rem); margin-top:8px; letter-spacing:-.02em; }
         .sub{ color:var(--text-dim); margin-top:6px; font-size:.92rem; }
 
-        .top{ display:grid; grid-template-columns:300px 1fr; gap:22px; margin-top:22px; align-items:start; }
-        @media (max-width:680px){ .top{ grid-template-columns:1fr; } }
+        .top{ display:grid; grid-template-columns:320px 1fr; gap:22px; margin-top:22px; align-items:start; }
+        @media (max-width:680px){
+            .top{ grid-template-columns:1fr; }
+            .bodybox{ top:8px; padding:10px; z-index:5; }
+            .bodies{ max-width:260px; margin:0 auto; }
+            svg.body{ max-height:24vh; }
+        }
 
-        .bodybox{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); padding:14px; }
-        .view-toggle{ display:flex; gap:6px; justify-content:center; margin-bottom:8px; }
-        .view-toggle button{ padding:6px 16px; font-size:.85rem; font-weight:600; border-radius:999px; cursor:pointer;
-            border:1px solid var(--border); background:var(--bg); color:var(--text-dim); }
-        .view-toggle button.active{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
-        svg.body{ width:100%; height:auto; display:block; }
+        .bodybox{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); padding:14px;
+            position:sticky; top:14px; align-self:start; }
+        .bodies{ display:flex; gap:10px; }
+        .bodyview{ flex:1; min-width:0; text-align:center; }
+        .vlabel{ font-size:.78rem; color:var(--text-dim); font-weight:600; margin-top:2px; }
+        svg.body{ width:100%; height:auto; display:block; max-height:46vh; }
         .region{ cursor:pointer; }
         .region .m{ fill:var(--muscle); stroke:var(--bg-elev); stroke-width:1.2; transition:fill .15s; }
         .region:hover .m{ fill:var(--accent2); }
@@ -66,8 +71,14 @@
         .card{ background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); padding:16px; cursor:pointer;
             transition:transform .15s,border-color .15s; display:flex; flex-direction:column; gap:6px; }
         .card:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:var(--shadow); }
-        .card h3{ font-size:1.05rem; }
+        .card.sel{ border-color:var(--accent); background:var(--accent-soft); }
+        .card.sel::after{ content:"✓ 선택됨"; position:absolute; top:10px; right:12px; font-size:.68rem; font-weight:700; color:var(--accent); }
+        .card{ position:relative; }
+        .card h3{ font-size:1.05rem; padding-right:54px; }
         .card .tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+        .detail-btn{ align-self:flex-start; margin-top:8px; padding:5px 12px; font-size:.78rem; font-weight:700;
+            border-radius:999px; border:1px solid var(--border); background:var(--bg); color:var(--text-dim); cursor:pointer; }
+        .detail-btn:hover{ border-color:var(--accent); color:var(--accent); }
         .tag{ font-size:.7rem; padding:3px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:600; }
         .tag.eq{ background:var(--bg-hover); color:var(--text-dim); }
         .tag.lv1{ background:rgba(63,185,80,.15); color:#3fb950; } .tag.lv2{ background:rgba(240,160,32,.15); color:var(--accent2); } .tag.lv3{ background:var(--accent-soft); color:var(--accent); }
@@ -98,13 +109,11 @@
 
         <div class="top">
             <div class="bodybox">
-                <div class="view-toggle">
-                    <button id="v-front" class="active" onclick="setView('front')">앞</button>
-                    <button id="v-back" onclick="setView('back')">뒤</button>
+                <div class="bodies">
+                    <div class="bodyview"><div id="body-front"></div><div class="vlabel">앞</div></div>
+                    <div class="bodyview"><div id="body-back"></div><div class="vlabel">뒤</div></div>
                 </div>
-                <div id="body-front"></div>
-                <div id="body-back" style="display:none"></div>
-                <div class="body-cap" id="body-cap">부위를 탭하거나, 운동에 마우스를 올려보세요</div>
+                <div class="body-cap" id="body-cap">운동을 누르면 사용 근육 표시 · 부위 탭하면 필터</div>
                 <div class="legend"><span><i class="p"></i>주동근</span><span><i class="s"></i>협응근</span></div>
             </div>
 
@@ -132,8 +141,6 @@
         glutes:{ ko:"둔근", desc:"대둔근" }, calves:{ ko:"종아리", desc:"비복근" },
     };
     const EQUIPS = ["바벨","덤벨","머신","케이블","맨몸","케틀벨","밴드","스미스"];
-    const FRONT_PARTS = ["shoulder","chest","biceps","abs","forearm","quads","calves"];
-    const BACK_PARTS  = ["traps","shoulder","back","triceps","forearm","glutes","hamstring","calves"];
 
     // ── 운동 DB ──
     const EX = [
@@ -230,10 +237,32 @@
         // 전신
         { n:"케틀벨 스윙", p:"glutes", s:["hamstring","back"], e:["케틀벨"], lv:2,
           steps:["케틀벨을 다리 사이로 보냈다 엉덩이 힘으로 앞으로 스윙."], tip:"팔이 아니라 힙 힌지로. 전신 유산소+근력." },
+        // 밴드
+        { n:"밴드 풀 어파트", p:"shoulder", s:["traps","back"], e:["밴드"], lv:1,
+          steps:["밴드를 어깨 높이로 잡고 양옆으로 당겨 벌린다.","견갑골을 모은다."], tip:"후면 삼각근·자세 교정. 라운드숄더에 좋음." },
+        { n:"밴드 로우", p:"back", s:["biceps"], e:["밴드"], lv:1,
+          steps:["밴드를 고정하고 팔꿈치를 뒤로 당긴다."], tip:"홈트로 등 자극. 장력 일정." },
+        { n:"밴드 바이셉 컬", p:"biceps", s:["forearm"], e:["밴드"], lv:1,
+          steps:["밴드를 발로 밟고 손잡이를 말아 올린다."], tip:"끝에서 장력 최대. 가벼운 부담." },
+        { n:"밴드 스쿼트", p:"quads", s:["glutes"], e:["밴드"], lv:1,
+          steps:["밴드를 밟고 어깨에 걸친 채 스쿼트."], tip:"무릎에 루프밴드 차면 둔근 활성 ↑." },
+        { n:"밴드 글루트 킥백", p:"glutes", s:["hamstring"], e:["밴드"], lv:1,
+          steps:["밴드를 발에 걸고 다리를 뒤로 차올린다."], tip:"둔근 고립. 허리 젖히지 말 것." },
+        // 스미스 머신
+        { n:"스미스 스쿼트", p:"quads", s:["glutes","hamstring"], e:["스미스"], lv:1,
+          steps:["스미스바를 어깨에 얹고 앉았다 일어선다."], tip:"궤적 고정이라 입문·고립에 안전." },
+        { n:"스미스 벤치프레스", p:"chest", s:["triceps","shoulder"], e:["스미스"], lv:1,
+          steps:["벤치를 바 아래 두고 가슴으로 내렸다 민다."], tip:"보조자 없이 안전하게 가슴 운동." },
+        { n:"스미스 숄더프레스", p:"shoulder", s:["triceps"], e:["스미스"], lv:1,
+          steps:["앉아서 바를 머리 위로 밀어 올린다."], tip:"궤적 고정으로 어깨 고립 쉬움." },
+        { n:"스미스 인버티드 로우", p:"back", s:["biceps"], e:["스미스"], lv:1,
+          steps:["바를 낮게 두고 매달려 가슴을 바로 당긴다."], tip:"맨몸 등 운동 입문용. 각도로 강도 조절." },
+        { n:"스미스 런지", p:"quads", s:["glutes"], e:["스미스"], lv:2,
+          steps:["바를 어깨에 얹고 한 발 앞으로 런지."], tip:"균형 부담 적어 중량 집중 가능." },
     ];
 
     // ── 상태 ──
-    let selPart = null, selEquip = null, currentView = "front";
+    let selPart = null, selEquip = null, selEx = null;
 
     // ── 인체도 SVG ──
     function region(part, shapes){
@@ -266,14 +295,6 @@
         </svg>`;
     }
 
-    function setView(v){
-        currentView = v;
-        document.getElementById("v-front").classList.toggle("active", v==="front");
-        document.getElementById("v-back").classList.toggle("active", v==="back");
-        document.getElementById("body-front").style.display = v==="front" ? "block" : "none";
-        document.getElementById("body-back").style.display = v==="back" ? "block" : "none";
-        highlightBody();
-    }
     function highlightBody(){
         document.querySelectorAll(".region").forEach(g => g.classList.toggle("on", g.dataset.part === selPart));
     }
@@ -284,25 +305,28 @@
     }
     function clearPart(){ selPart = null; highlightBody(); applyFilter(); }
 
-    // ── 운동 hover → 근육 미리보기 ──
-    function previewEx(i){
+    // ── 근육 하이라이트 (선택 운동 또는 hover 미리보기) ──
+    function showMuscles(i){
+        document.querySelectorAll(".region").forEach(g => g.classList.remove("hl-prim","hl-sec"));
+        if (i == null){
+            document.getElementById("body-cap").textContent = "운동을 누르면 사용 근육 표시 · 부위 탭하면 필터";
+            return;
+        }
         const x = EX[i], sec = x.s;
         document.querySelectorAll(".region").forEach(g => {
-            g.classList.remove("hl-prim","hl-sec");
             if (g.dataset.part === x.p) g.classList.add("hl-prim");
             else if (sec.includes(g.dataset.part)) g.classList.add("hl-sec");
         });
-        const here = currentView === "front" ? FRONT_PARTS : BACK_PARTS;
-        const targets = [x.p, ...sec];
-        const otherSide = targets.some(p => !here.includes(p));
         const secTxt = sec.length ? " · " + sec.map(k => `<span style="color:var(--accent2)">${PARTS[k].ko}</span>`).join(" · ") : "";
         document.getElementById("body-cap").innerHTML =
-            `<b>${x.n}</b> → <span style="color:var(--accent)">${PARTS[x.p].ko}</span>${secTxt}` +
-            (otherSide ? ` <span style="opacity:.7">· 🔄 ${currentView==="front"?"뒤":"앞"}쪽도</span>` : "");
+            `<b>${x.n}</b> → <span style="color:var(--accent)">${PARTS[x.p].ko}</span>${secTxt}`;
     }
-    function clearPreview(){
-        document.querySelectorAll(".region").forEach(g => g.classList.remove("hl-prim","hl-sec"));
-        document.getElementById("body-cap").textContent = "부위를 탭하거나, 운동에 마우스를 올려보세요";
+    function previewEx(i){ showMuscles(i); }            // hover: 임시 미리보기
+    function clearPreview(){ showMuscles(selEx); }      // 떼면 선택된 운동으로 복귀
+    function selectEx(i){
+        selEx = (selEx === i) ? null : i;
+        document.querySelectorAll(".card").forEach(c => c.classList.toggle("sel", +c.dataset.idx === selEx));
+        showMuscles(selEx);
     }
 
     // ── 필터/렌더 ──
@@ -334,9 +358,10 @@
     function cardHTML(x){
         const idx = EX.indexOf(x);
         const eqTags = x.e.map(e => `<span class="tag eq">${e}</span>`).join("");
-        return `<div class="card" onclick="openEx(${idx})" onmouseenter="previewEx(${idx})" onmouseleave="clearPreview()">
+        return `<div class="card${selEx===idx?' sel':''}" data-idx="${idx}" onclick="selectEx(${idx})" onmouseenter="previewEx(${idx})" onmouseleave="clearPreview()">
             <h3>${x.n}</h3>
             <div class="tags"><span class="tag">${PARTS[x.p].ko}</span>${eqTags}<span class="tag lv${x.lv}">${["","입문","중급","고급"][x.lv]}</span></div>
+            <button class="detail-btn" onclick="event.stopPropagation();openEx(${idx})">방법 보기 ▸</button>
         </div>`;
     }
     function openEx(i){
